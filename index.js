@@ -1,5 +1,4 @@
 var xmpp = require('node-xmpp')
-  , Client = require('./models/client')
   , Room = require('./models/room')
   , Talker = require('talker-client')
   , opts = {
