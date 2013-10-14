@@ -1,0 +1,18 @@
+{
+  "name": "talker-xmpp",
+  "version": "1.0.1",
+  "description": "ERROR: No README.md file found!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "author": "",
+  "license": "BSD",
+  "dependencies": {
+    "coffee-script": "~1.6.2",
+    "talker-client": "1.0.1",
+    "node-xmpp": "~0.7.1",
+    "backbone": "~1.1.0"
+  }
+}
