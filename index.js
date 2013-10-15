@@ -61,5 +61,8 @@ c2s.on("connect", function(client) {
     }
   })
 
-  client.on('error', function(err) { console.error('oops', err) })
+  client.on('error', function(err) {
+    console.error('oops', err)
+    process.exit(1)
+  })
 });

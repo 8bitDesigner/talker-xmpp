@@ -1,12 +1,7 @@
 var xmpp = require('node-xmpp')
-  , Roster = require('./roster')
 
 function Room(jid, client) {
   this.jid = jid
-
-  this.roster = new Roster()
-  this.roster.on('add',    function(jid) { this.broadcastJoin(jid) }.bind(this))
-  this.roster.on('remove', function(jid) { this.broadcastLeave(jid) }.bind(this))
 
   this.client = client
   this._bindEvents()
@@ -38,19 +33,51 @@ Room.prototype.join = function() {
   }.bind(this))
 
   this.room.once('users', function(data) {
-    this.roster.addTalkerUsers(data.users)
+    var sorted = data.users.sort(function(a, b) {
+      var client = this.client.jid.bare().toString()
+      if (a.email !== client && b.email !== client) {
+        return 0
+      } else if (a.email == client) {
+        return 1
+      } else if (b.email == client) {
+        return -1
+      }
+    }.bind(this))
+
+    sorted.forEach(function(user) {
+      this.broadcastJoin(user)
+    }.bind(this))
+
     // this.broadcastHistory()
 
     this.room.on('message', this.broadcastMessage.bind(this))
-    this.room.on('join', this.roster.add.bind(this.roster))
-    this.room.on('leave', this.roster.remove.bind(this.roster))
+
+    this.room.on('join', function(data) {
+      this.broadcastJoin(data.user)
+    }.bind(this))
+
+    this.room.on('leave', function(data) {
+      this.broadcastLeave(data.user)
+    }.bind(this))
+
+    this.room.on('disconnect', function() {
+      console.log('talker client disconnected')
+      // reconnect logic here
+      process.exit(1)
+    })
+    this.room.on('error', function(err) {
+      console.error(err)
+      // reconnect logic here
+      process.exit(1)
+    })
   }.bind(this))
 }
 
 Room.prototype.leave = function() {
   this.room.leave()
+  // Where can I get a user name?
+  // this.broadcastLeave({user: name})
   this._unbindEvents()
-  this.roster.removeAllEventListeners()
 }
 
 Room.prototype.handleMessage = function(stanza) {
@@ -67,14 +94,15 @@ Room.prototype.handlePresence = function(stanza) {
 
 Room.prototype.broadcastJoin = function(user) {
   var to = this.client.jid
-    , from = new xmpp.JID(this.jid.user, this.jid.domain, user.resource)
+    , from = new xmpp.JID(this.jid.user, this.jid.domain, user.name)
+    , origin = new xmpp.JID(user.email)
     , xml
 
   xml = new xmpp.Presence({ from: from.toString(), to: to.toString() })
             .c('x', {xmlns: 'http://jabber.org/protocol/muc#user'})
               .c('item', {affiliation: 'member', role: 'participant'}).up()
 
-  if (to.bare().equals(user.bare())) {
+  if (to.bare().equals(origin)) {
     xml.c('status', {code: 110 }).up()
        .c('status', {code: 210 })
   }
@@ -84,16 +112,16 @@ Room.prototype.broadcastJoin = function(user) {
 
 Room.prototype.broadcastLeave = function(user) {
   var to = this.client.jid
-    , from = new xmpp.JID(this.jid.user, this.jid.domain, user.resource)
+    , from = new xmpp.JID(this.jid.user, this.jid.domain, user.name)
+    , origin = new xmpp.JID(user.email)
     , xml
 
-  xml = new xmpp.Presence({ from: from.toString(), to: to.toString() })
+  xml = new xmpp.Presence({ from: from.toString(), to: to.toString(), type: 'unavailable' })
             .c('x', {xmlns: 'http://jabber.org/protocol/muc#user'})
-              .c('item', {affiliation: 'member', role: 'participant'}).up()
+              .c('item', {affiliation: 'member', role: 'none'}).up()
 
-  if (to.bare().equals(user.bare())) {
-    xml.c('status', {code: 110 }).up()
-       .c('status', {code: 210 })
+  if (to.bare().equals(origin)) {
+    xml.c('status', {code: 110 })
   }
 
   this._send(xml)
