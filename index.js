@@ -24,7 +24,7 @@ c2s.on("connect", function(client) {
   })
 
   client.on('presence', function(stanza) {
-    if (!stanza.attrs.to) { return }
+    if (!stanza.attrs.to || stanza.attrs.type) { return }
 
     var toJid = new xmpp.JID(stanza.attrs.to)
       , bareJid = toJid.bare().toString()
@@ -52,13 +52,18 @@ c2s.on("connect", function(client) {
   })
 
   client.on('iq', function(stanza) {
-    // Send back an empty roster if asked
-    if (stanza.attrs.type === 'get' && stanza.getChild('query', 'jabber:iq:roster')) {
-      var response = new xmpp.Iq({ to: stanza.attrs.from, type: 'result', id: stanza.attrs.id })
-                          .c('query', { xmlns: 'jabber:iq:roster'})
+    var type = stanza.attrs.type
+      , from = stanza.attrs.from
+      , id = stanza.attrs.id
+      , query = stanza.getChild('query') ? stanza.getChild('query').attrs.xmlns
+      , response
 
-      client.send(response.root().toString())
+    // Answer all queries with an empty response
+    if (type === 'get' && query) {
+      response = new xmpp.Iq({ to: from, type: 'result', id: id }).c('query', { xmlns: query})
     }
+
+    if (response) { client.send(response.root().toString()) }
   })
 
   client.on('error', function(err) {
