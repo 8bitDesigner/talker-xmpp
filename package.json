@@ -10,9 +10,7 @@
   "author": "",
   "license": "BSD",
   "dependencies": {
-    "coffee-script": "~1.6.2",
     "talker-client": "1.2.0",
-    "node-xmpp": "~0.7.1",
-    "backbone": "~1.1.0"
+    "node-xmpp": "~0.7.1"
   }
 }
