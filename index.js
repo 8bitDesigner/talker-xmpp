@@ -2,15 +2,18 @@ var xmpp = require('node-xmpp')
   , Room = require('./models/room')
   , Talker = require('talker-client')
   , opts = {
-      domain: 'localhost',
+      domain: 'talker-bridge.herokuapp.com',
       port: '5222'
     }
+
+console.log('setting up server!')
 
 // Sets up the server.
 var c2s = new xmpp.C2SServer(opts);
 
 // On Connect event. When a client connects.
 c2s.on("connect", function(client) {
+  console.log('client connected')
 
   // Allows the developer to authenticate users against anything they want.
   client.on("authenticate", function(opts, cb) {
