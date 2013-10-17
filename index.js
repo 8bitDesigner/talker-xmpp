@@ -21,6 +21,7 @@ c2s.on("connect", function(client) {
   // Stanza routing
   client.on("stanza", function(stanza) {
     client.emit(stanza.name, stanza)
+    console.log(stanza.toString())
   })
 
   client.on('presence', function(stanza) {
@@ -55,7 +56,7 @@ c2s.on("connect", function(client) {
     var type = stanza.attrs.type
       , from = stanza.attrs.from
       , id = stanza.attrs.id
-      , query = stanza.getChild('query') ? stanza.getChild('query').attrs.xmlns
+      , query = stanza.getChild('query') ? stanza.getChild('query').attrs.xmlns : undefined
       , response
 
     // Answer all queries with an empty response

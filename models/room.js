@@ -2,10 +2,8 @@ var xmpp = require('node-xmpp')
 
 function Room(jid, client) {
   this.jid = jid
-
   this.client = client
   this._bindEvents()
-
   this.join()
 }
 
@@ -31,6 +29,15 @@ Room.prototype.join = function() {
   events.forEach(function(event) {
     this.room.on(event, function(payload) { console.log('event happened', event, payload) })
   }.bind(this))
+
+  this.room.on('connect', function() { console.log('talker client connected') })
+
+  this.room.on('disconnect', function() { console.log('talker client disconnected') })
+
+  this.room.on('error', function(err) {
+    console.error('talker error', err)
+    process.exit(1)
+  })
 
   this.room.once('users', function(data) {
     var sorted = data.users.sort(function(a, b) {
@@ -59,17 +66,6 @@ Room.prototype.join = function() {
     this.room.on('leave', function(data) {
       this.broadcastLeave(data.user)
     }.bind(this))
-
-    this.room.on('disconnect', function() {
-      console.log('talker client disconnected')
-      // reconnect logic here
-      process.exit(1)
-    })
-    this.room.on('error', function(err) {
-      console.error(err)
-      // reconnect logic here
-      process.exit(1)
-    })
   }.bind(this))
 }
 
@@ -85,12 +81,12 @@ Room.prototype.handleMessage = function(stanza) {
 }
 
 Room.prototype.handlePresence = function(stanza) {
-  // Client disconnected, abandon ship!
-  if (stanza.attrs.type == 'unavailable') {
-    this.leave()
-  }
+  if (stanza.attrs.type == 'unavailable') { this.leave() }
 }
 
+Room.prototype._send = function(xml) {
+  this.client.send(xml.root().toString())
+}
 
 Room.prototype.broadcastJoin = function(user) {
   var to = this.client.jid
@@ -134,10 +130,6 @@ Room.prototype.broadcastMessage = function(data) {
       type: 'groupchat'
     }).c('body').t(data.content)
   )
-}
-
-Room.prototype._send = function(xml) {
-  this.client.send(xml.root().toString())
 }
 
 module.exports = Room;
