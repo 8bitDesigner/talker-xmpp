@@ -25,7 +25,7 @@ Room.prototype._unbindEvents = function() {
 Room.prototype.join = function() {
   this.room = this.client.talker.join(this.jid.user)
 
-  var events = [ 'connect', 'message', 'join', 'users', 'idle', 'back', 'leave' ]
+  var events = [ 'error', 'timeout', 'connect', 'message', 'join', 'users', 'idle', 'back', 'leave' ]
   events.forEach(function(event) {
     this.room.on(event, function(payload) { console.log('event happened', event, payload) })
   }.bind(this))
@@ -66,7 +66,13 @@ Room.prototype.join = function() {
     this.room.on('leave', function(data) {
       this.broadcastLeave(data.user)
     }.bind(this))
+
   }.bind(this))
+
+  this.room.on('disconnect', this.handleDisconnect.bind(this))
+  this.room.on('timeout', this.handleDisconnect.bind(this))
+  this.room.on('error', this.handleDisconnect.bind(this))
+  this.room.on('connect', function() { this.reconnecting = false }.bind(this))
 }
 
 Room.prototype.leave = function() {
@@ -86,6 +92,18 @@ Room.prototype.handlePresence = function(stanza) {
 
 Room.prototype._send = function(xml) {
   this.client.send(xml.root().toString())
+}
+
+Room.prototype.handleDisconnect = function() {
+  var self = this;
+
+  if (!this.reconnecting) {
+    this.reconnecting = true
+    console.log('room died, disconnecting and reconnecting in 1 second')
+    setTimeout(function() {
+      self.room.reconnect()
+    }, 1000)
+  }
 }
 
 Room.prototype.broadcastJoin = function(user) {
