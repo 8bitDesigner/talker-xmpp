@@ -25,20 +25,26 @@ function Room(jid, client) {
 Room.prototype.join = function() {
   var self = this;
   this.room = this.client.talker.join(this.jid.user)
+  this.room.on('error', this.handleDisconnect.bind(this))
 
-  this.room.on('connect', function() { console.log('talker client connected') })
+  function isMessage(e) { return e.type === 'message' }
 
-  // When talker receives roster updates, update our internal roster
-  // which will in turn, emit XMPP presence stanzas
-  this.room.on('users',   function(data) { self.roster.addTalkerUsers(data.users) })
-  this.room.on('join',    function(data) { self.roster.add(data.user) })
-  this.room.on('leave',   function(data) { self.roster.remove(data.user) })
+  this.room.on('connect', function() {
+    console.log('talker client connected')
 
-  // When talker receives messages, emit them as XMPP messages
-  this.room.on('message', function(data) { self.broadcastMessage(data) })
+    self.room.once('users', function(data) {
+      self.roster.addTalkerUsers(data.users)
+      self.room.getEvents(function(events) {
+        events.filter(isMessage).forEach(function(message) {
+          self.broadcastMessage(message, true)
+        })
 
-  // Shit-hitting-the-fan management
-  this.room.on('error',   function(e) { self.handleDisconnect(e) })
+        self.room.on('join',    function(data) { self.roster.add(data.user) })
+        self.room.on('leave',   function(data) { self.roster.remove(data.user) })
+        self.room.on('message', function(data) { self.broadcastMessage(data) })
+      })
+    })
+  })
 }
 
 
@@ -105,16 +111,23 @@ Room.prototype.broadcastPresence = function(event, user) {
 }
 
 // Messages from Talker to the client
-Room.prototype.broadcastMessage = function(data) {
+Room.prototype.broadcastMessage = function(data, delayed) {
   var user = this.roster.findTalkerUser(data.user).pop()
     , nick = user ? user.resource : data.user.name
+    , xml = new xmpp.Message({
+        from: new xmpp.JID(this.jid.user, this.jid.domain, nick),
+        type: 'groupchat'
+      })
 
-  this._send(
-    new xmpp.Message({
-      from: new xmpp.JID(this.jid.user, this.jid.domain, nick),
-      type: 'groupchat'
-    }).c('body').t(data.content)
-  )
+  xml.c('body').t(data.content).root()
+
+  if (delayed) {
+    xml.c('delay', {xmlns: 'urn:xmpp:delay', from: this.jid.bare(),
+                    stamp: data.time.toISOString()
+    })
+  }
+
+  this._send(xml)
 }
 
 module.exports = Room;
