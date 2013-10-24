@@ -2,18 +2,16 @@ var xmpp = require('node-xmpp')
   , Room = require('./models/room')
   , Talker = require('talker-client')
   , opts = {
-      domain: 'talker-bridge.herokuapp.com',
+      domain: 'localhost',
       port: '5222'
     }
 
-console.log('setting up server!')
-
 // Sets up the server.
 var c2s = new xmpp.C2SServer(opts);
+console.log('Talker bridge now listening on port', opts.port)
 
 // On Connect event. When a client connects.
 c2s.on("connect", function(client) {
-  console.log('client connected')
 
   // Allows the developer to authenticate users against anything they want.
   client.on("authenticate", function(opts, cb) {
@@ -24,22 +22,20 @@ c2s.on("connect", function(client) {
   // Stanza routing
   client.on("stanza", function(stanza) {
     client.emit(stanza.name, stanza)
-    console.log(stanza.toString())
   })
 
   client.on('presence', function(stanza) {
-    if (!stanza.attrs.to || stanza.attrs.type) { return }
+    // Needs a target
+    if (!stanza.attrs.to) { return }
 
     var toJid = new xmpp.JID(stanza.attrs.to)
+      , isMuc = stanza.getChild('x', 'http://jabber.org/protocol/muc')
       , bareJid = toJid.bare().toString()
-      , room
 
     // Directed MUC joining presence
-    if (stanza.getChild('x', 'http://jabber.org/protocol/muc')) {
-      room = new Room(toJid, client)
-
-    // Directed presence to an entitiy
-    } else {
+    if (isMuc && !stanza.attrs.type) {
+      new Room(toJid, client)
+    } else if (stanza.attrs.type) {
       client.emit(bareJid+':presence', stanza)
     }
   })

@@ -56,8 +56,6 @@ Roster.prototype.talkerToJid = function(user) {
     jid.setResource(user.name)
   }
 
-  console.log('converting talker user to jid', this.client, jid, jid.isClient)
-
   return jid
 }
 
@@ -75,7 +73,11 @@ Roster.prototype.addTalkerUsers = function(talkerUsers) {
   var self = this
     , jids = talkerUsers.map(this.talkerToJid.bind(this))
 
-  this.sortByClient(jids).map(function(u) { return self.add(u) })
+  this.sortByClient(jids).map(this.add.bind(this))
+}
+
+Roster.prototype.evacuate = function() {
+  this.sortByClient(this.users).map(this.remove.bind(this))
 }
 
 Roster.prototype.sortByClient = function(jids) {
