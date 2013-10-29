@@ -58,18 +58,24 @@ Room.prototype.handleMessage = function(stanza) {
 
 // Presence from the client to Talker
 Room.prototype.handlePresence = function(stanza) {
-  var bare = this.client.jid.bare().toString()
+  var bare = this.jid.bare().toString()
 
   // At the moment, the only presence we care about is 'unavailable', which
   // means the client has left the MUC, so we should remove our event listeners
   // and allow the room object to be reaped by the GC
   if (stanza.attrs.type == 'unavailable') {
-    this.broadcastPresence('leave', this.roster.getClient())
-    this.room.leave()
-    this.room.removeAllListeners()
-    this.client.removeAllListeners(bare+':message')
-    this.client.removeAllListeners(bare+':presence')
+    this.room.destroy()
   }
+}
+
+Room.prototype.destroy = function() {
+  var bare = this.jid.bare().toString()
+
+  this.broadcastPresence('leave', this.roster.getClient())
+  this.room.leave()
+  this.room.removeAllListeners()
+  this.client.removeAllListeners(bare+':message')
+  this.client.removeAllListeners(bare+':presence')
 }
 
 Room.prototype.handleDisconnect = function(err) {
