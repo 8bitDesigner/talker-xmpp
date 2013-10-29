@@ -18,11 +18,17 @@ There are two things you want to do - first, set up a new account on your XMPP
 client of choice and plug in your registered Talker email address as your
 account name, and your Talker API token as your password.
 
+![](http://i.imgur.com/kJmUkWK.png)
+
 Then, go into your client's settings, and plug in the host and port of the
 talker bridge, and if you're not using SSL, disable authentication.
+
+![](http://i.imgur.com/SE531an.png)
 
 Enable the account, and you should be good to go.
 
 ## Joining a chat room
 Once you're connected, in your XMPP client, find the `Join Room` command, and
 plug in the Talker room ID, plus "@" the host of your Talker bridge.
+
+![](http://i.imgur.com/aK4Ew4F.png)
