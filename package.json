@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
   },
-  "repository": "",
-  "author": "",
+  "repository": "https://github.com/8bitDesigner/talker-xmpp",
+  "author": "Paul Sweeney <paul@8-bitdesign.com>",
   "license": "BSD",
   "dependencies": {
     "talker-client": "1.4.*",

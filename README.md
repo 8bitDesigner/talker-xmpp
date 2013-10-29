@@ -1,5 +1,6 @@
 # What is this?
-Talker is like HipChat or Campfire, only free. This is good. However there's no
+[Talker](http://talkerapp.com) is like [HipChat](https://www.hipchat.com/) or 
+[Campfire](https://campfirenow.com/), only free. This is good. However there's no
 third party apps that integrate with it, and it's no longer supported, which is
 bad.
 
