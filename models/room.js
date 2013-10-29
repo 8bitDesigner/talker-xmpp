@@ -28,18 +28,21 @@ Room.prototype.join = function() {
   this.room.on('error', this.handleDisconnect.bind(this))
 
   function isMessage(e) { return e.type === 'message' }
+  function sendMessage(m) { self.broadcastMessage(m, true) }
 
+  // Per spec - process the following room join events in order
   this.room.on('connect', function() {
-    console.log('talker client connected')
-
     self.room.once('users', function(data) {
+      // First send initial presence for all users in room
       self.roster.addTalkerUsers(data.users)
       self.room.getEvents(function(events) {
-        events.filter(isMessage).forEach(function(message) {
-          self.broadcastMessage(message, true)
-        })
+        // Then send any delayed messages
+        events.filter(isMessage).forEach(sendMessage)
 
+        // Lastly, start processing normal room events
         self.room.on('join',    function(data) { self.roster.add(data.user) })
+        self.room.on('idle',    function(data) { self.broadcastPresence('away', data.user) })
+        self.room.on('back',    function(data) { self.broadcastPresence('', data.user) })
         self.room.on('leave',   function(data) { self.roster.remove(data.user) })
         self.room.on('message', function(data) { self.broadcastMessage(data) })
       })
@@ -55,7 +58,7 @@ Room.prototype.handleMessage = function(stanza) {
 
 // Presence from the client to Talker
 Room.prototype.handlePresence = function(stanza) {
-  var bare = this.client.bare().toString()
+  var bare = this.client.jid.bare().toString()
 
   // At the moment, the only presence we care about is 'unavailable', which
   // means the client has left the MUC, so we should remove our event listeners
@@ -91,17 +94,21 @@ Room.prototype._send = function(xml) {
 
 // Presence from Talker to the client
 Room.prototype.broadcastPresence = function(event, user) {
-  console.log('broadcasting presence', event, user)
-
   var to = this.client.jid
     , from = new xmpp.JID(this.jid.user, this.jid.domain, user.resource)
-    , role = (event === 'join') ? 'participant' : 'none'
-    , xml
+    , role = (event === 'leave') ? 'none' : 'participant'
+    , xml = new xmpp.Presence({ from: from.toString(), to: to.toString() })
 
-  xml = new xmpp.Presence({ from: from.toString(), to: to.toString() })
-            .c('x', {xmlns: 'http://jabber.org/protocol/muc#user'})
-              .c('item', {affiliation: 'member', role: role}).up()
+  // Attach a show key if we were given an availability presence
+  if (event && event !== 'leave' && event !== 'join') {
+    xmpp.c('show').t(event).root()
+  }
 
+  // Attach the MUC bits here
+  xml.c('x', {xmlns: 'http://jabber.org/protocol/muc#user'})
+       .c('item', {affiliation: 'member', role: role}).up()
+
+  // Send any necessary self presence, or JID assignment status codes
   if (user.isClient) {
     xml.c('status', {code: 110 }).up()
     if (event == 'join') { xml.c('status', {code: 210 }).up() }
