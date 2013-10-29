@@ -107,7 +107,7 @@ Room.prototype.broadcastPresence = function(event, user) {
 
   // Attach a show key if we were given an availability presence
   if (event && event !== 'leave' && event !== 'join') {
-    xmpp.c('show').t(event).root()
+    xml.c('show').t(event).root()
   }
 
   // Attach the MUC bits here
