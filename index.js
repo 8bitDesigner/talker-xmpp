@@ -82,15 +82,7 @@ function boot(server) {
 
     client.on('error', function(err) {
       console.error('oops', err.stack ? err.stack.replace('\n',"\n") : err)
-
-      client.rooms.forEach(function(room) { room.destroy() })
-      client.removeAllListeners()
-      delete server
-
-      setTimeout(function() {
-        server = new xmpp.C2SServer(opts)
-        boot(server)
-      }, 100)
+      process.exit(1)
     })
   });
 }

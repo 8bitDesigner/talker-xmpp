@@ -25,7 +25,12 @@ function Room(jid, client) {
 Room.prototype.join = function() {
   var self = this;
   this.room = this.client.talker.join(this.jid.user)
-  this.room.on('error', this.handleDisconnect.bind(this))
+  this.room.on('error', function(err) {
+    console.log('disconnected from Talker because of ', err, 'reconnecting')
+    self.room.destroy()
+    self.room.removeAllListeners()
+    self.join()
+  })
 
   function isMessage(e) { return e.type === 'message' }
   function sendMessage(m) { self.broadcastMessage(m, true) }
@@ -77,22 +82,6 @@ Room.prototype.destroy = function() {
   this.client.removeAllListeners(bare+':message')
   this.client.removeAllListeners(bare+':presence')
 }
-
-Room.prototype.handleDisconnect = function(err) {
-  var self = this;
-
-  console.log('disconnected because of ', err)
-
-  // Show a mass exodus from the chat room
-  this.roster.evacuate()
-
-  // Queue up a reconnect attempt
-  setTimeout(function() {
-    console.log('attempting reconnect')
-    self.room.reconnect()
-  }, 3000)
-}
-
 
 Room.prototype._send = function(xml) {
   this.client.send(xml.root().toString())
