@@ -76,10 +76,6 @@ Roster.prototype.addTalkerUsers = function(talkerUsers) {
   this.sortByClient(jids).map(this.add.bind(this))
 }
 
-Roster.prototype.evacuate = function() {
-  this.sortByClient(this.users).map(this.remove.bind(this))
-}
-
 Roster.prototype.sortByClient = function(jids) {
   var client = this.client.toString()
     , self = this
