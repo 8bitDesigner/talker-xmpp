@@ -12,6 +12,7 @@
   "license": "BSD",
   "dependencies": {
     "talker-client": "1.4.*",
-    "node-xmpp": "~0.7.1"
+    "node-xmpp": "~0.7.1",
+    "winston": "~0.7.2"
   }
 }
